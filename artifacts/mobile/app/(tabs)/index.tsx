@@ -137,12 +137,14 @@ export default function DashboardScreen() {
 
   const hotDeals = useMemo(
     () =>
-      events.filter(
-        (e) =>
-          e.eventType === "DAY1_LISTING" ||
-          e.eventType === "PRICING" ||
-          (e.eventType === "BOOK_BUILDING" && e.subscriptionOverall && e.subscriptionOverall > 5)
-      ).slice(0, 5),
+      events
+        .filter(
+          (e) =>
+            e.eventType === "PRICING" ||
+            e.eventType === "BOOK_BUILDING" ||
+            e.eventType === "ALLOTMENT"
+        )
+        .slice(0, 5),
     [events]
   );
 
@@ -235,7 +237,7 @@ export default function DashboardScreen() {
           })}
         </ScrollView>
 
-        <SectionHeader title="Today's Headlines" subtitle="Pricings, listings & closings" />
+        <SectionHeader title="Coming Up" subtitle="Active pricings & book-building" />
         {hotDeals.length > 0 ? (
           <FlatList
             data={hotDeals}
@@ -246,13 +248,13 @@ export default function DashboardScreen() {
         ) : (
           <View style={[styles.emptySection, { borderColor: colors.border }]}>
             <Text style={[styles.emptySectionText, { color: colors.mutedForeground }]}>
-              No pricings or listings in this window
+              No active pricings or book-building this window
             </Text>
           </View>
         )}
 
         <SectionHeader
-          title="Full Activity Feed"
+          title="Upcoming Pipeline"
           right={
             <Pressable onPress={() => router.push("/(tabs)/feed")}>
               <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>

@@ -18,7 +18,7 @@ function NativeTabLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="feed">
         <Icon sf={{ default: "chart.line.uptrend.xyaxis", selected: "chart.line.uptrend.xyaxis" }} />
-        <Label>Feed</Label>
+        <Label>Pipeline</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="report">
         <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
@@ -96,7 +96,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="feed"
         options={{
-          title: "IPO Feed",
+          title: "Pipeline",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="chart.line.uptrend.xyaxis" tintColor={color} size={22} />

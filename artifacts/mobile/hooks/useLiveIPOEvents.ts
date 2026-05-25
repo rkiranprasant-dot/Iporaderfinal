@@ -49,6 +49,27 @@ function mapEventType(t: string): EventType {
   return valid.includes(t as EventType) ? (t as EventType) : "S1_FILED";
 }
 
+export const UPCOMING_TYPES: EventType[] = [
+  "S1_FILED",
+  "BOOK_BUILDING",
+  "PRICING",
+  "ALLOTMENT",
+  "SPAC",
+  "DIRECT_LISTING",
+  "UPLISTING",
+  "RUMOR",
+];
+
+function sortByDate(a: IPOEvent, b: IPOEvent): number {
+  const da = a.listingDate ?? a.filingDate ?? "9999";
+  const db = b.listingDate ?? b.filingDate ?? "9999";
+  return da.localeCompare(db);
+}
+
+export const MOCK_UPCOMING_EVENTS: IPOEvent[] = MOCK_IPO_EVENTS
+  .filter((e) => UPCOMING_TYPES.includes(e.eventType))
+  .sort(sortByDate);
+
 export type DataSource = "live" | "cached" | "sample" | "loading" | "rate_limited";
 
 export interface LiveIPOState {
@@ -76,40 +97,43 @@ export function useLiveIPOEvents(): LiveIPOState {
   const rawEvents = data?.events ?? [];
   const hasLive = rawEvents.length > 0 && !isError;
 
-  const isRateLimited = isError && (
-    String((error as { message?: string })?.message ?? "").includes("quota") ||
-    String((error as { message?: string })?.message ?? "").includes("429") ||
-    String((error as { status?: number })?.status ?? "").includes("429")
-  );
+  const isRateLimited =
+    isError &&
+    (String((error as { message?: string })?.message ?? "").includes("quota") ||
+      String((error as { message?: string })?.message ?? "").includes("429") ||
+      String((error as { status?: number })?.status ?? "").includes("429"));
 
   const events: IPOEvent[] = hasLive
-    ? rawEvents.map((e, idx) => ({
-        id: e.id ?? `live-${idx}`,
-        company: e.company,
-        ticker: e.ticker ?? undefined,
-        exchange: e.exchange,
-        region: mapRegion(e.region),
-        sector: e.sector,
-        eventType: mapEventType(e.eventType),
-        raiseAmountUSD: e.raiseAmountUSD ?? undefined,
-        raiseAmountLocal: e.raiseAmountLocal ?? undefined,
-        offerPrice: e.offerPrice ?? undefined,
-        priceBand: e.priceBand ?? undefined,
-        postMoneyValuation: e.postMoneyValuation ?? undefined,
-        subscriptionQIB: e.subscriptionQIB ?? undefined,
-        subscriptionNII: e.subscriptionNII ?? undefined,
-        subscriptionRetail: e.subscriptionRetail ?? undefined,
-        subscriptionOverall: e.subscriptionOverall ?? undefined,
-        gmp: e.gmp ?? undefined,
-        day1Performance: e.day1Performance ?? undefined,
-        lotSize: e.lotSize ?? undefined,
-        leadBookrunners: e.leadBookrunners ?? undefined,
-        listingDate: e.listingDate ?? undefined,
-        filingDate: e.filingDate ?? undefined,
-        summary: e.summary,
-        source: e.source,
-      }))
-    : MOCK_IPO_EVENTS;
+    ? rawEvents
+        .filter((e) => UPCOMING_TYPES.includes(mapEventType(e.eventType)))
+        .map((e, idx) => ({
+          id: e.id ?? `live-${idx}`,
+          company: e.company,
+          ticker: e.ticker ?? undefined,
+          exchange: e.exchange,
+          region: mapRegion(e.region),
+          sector: e.sector,
+          eventType: mapEventType(e.eventType),
+          raiseAmountUSD: e.raiseAmountUSD ?? undefined,
+          raiseAmountLocal: e.raiseAmountLocal ?? undefined,
+          offerPrice: e.offerPrice ?? undefined,
+          priceBand: e.priceBand ?? undefined,
+          postMoneyValuation: e.postMoneyValuation ?? undefined,
+          subscriptionQIB: e.subscriptionQIB ?? undefined,
+          subscriptionNII: e.subscriptionNII ?? undefined,
+          subscriptionRetail: e.subscriptionRetail ?? undefined,
+          subscriptionOverall: e.subscriptionOverall ?? undefined,
+          gmp: e.gmp ?? undefined,
+          day1Performance: undefined,
+          lotSize: e.lotSize ?? undefined,
+          leadBookrunners: e.leadBookrunners ?? undefined,
+          listingDate: e.listingDate ?? undefined,
+          filingDate: e.filingDate ?? undefined,
+          summary: e.summary,
+          source: e.source,
+        }))
+        .sort(sortByDate)
+    : MOCK_UPCOMING_EVENTS;
 
   const dataSource: DataSource = isLoading
     ? "loading"

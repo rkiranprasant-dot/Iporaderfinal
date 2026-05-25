@@ -28,11 +28,11 @@ import { useColors } from "@/hooks/useColors";
 
 const EVENT_FILTERS: { key: EventType | "ALL"; label: string }[] = [
   { key: "ALL", label: "All" },
-  { key: "DAY1_LISTING", label: "Day 1" },
-  { key: "PRICING", label: "Priced" },
   { key: "BOOK_BUILDING", label: "Book Building" },
-  { key: "S1_FILED", label: "Filed" },
+  { key: "PRICING", label: "Pricing" },
   { key: "ALLOTMENT", label: "Allotment" },
+  { key: "S1_FILED", label: "Filed" },
+  { key: "SPAC", label: "SPAC" },
   { key: "DIRECT_LISTING", label: "Direct" },
   { key: "UPLISTING", label: "Uplisting" },
   { key: "RUMOR", label: "Rumor" },
@@ -122,7 +122,7 @@ export default function FeedScreen() {
               </View>
             )}
             <Text style={[styles.liveCount, { color: colors.mutedForeground }]}>
-              {events.length} events{isLive ? " via Google Search" : ""}
+              {events.length} upcoming{isLive ? " · Google Search" : " · sample"}
             </Text>
           </View>
         )}
@@ -214,14 +214,14 @@ export default function FeedScreen() {
             <View style={styles.empty}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Fetching live IPO data…
+                Fetching upcoming IPOs…
               </Text>
             </View>
           ) : (
             <View style={styles.empty}>
               <Feather name="inbox" size={40} color={colors.mutedForeground} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                No events match your filters
+                No upcoming IPOs match your filters
               </Text>
             </View>
           )

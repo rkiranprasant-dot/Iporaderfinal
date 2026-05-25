@@ -146,39 +146,39 @@ router.get("/live", async (req, res) => {
       ? `Focus only on the ${region.replace(/_/g, " ")} region.`
       : "Cover all major global exchanges including NYSE, Nasdaq, LSE, HKEX, BSE, NSE, Tadawul, ASX, and others.";
 
-    const prompt = `Today is ${today}. Search the web for the most recent IPO events from the past 7 days across global stock exchanges.
+    const prompt = `Today is ${today}. Search the web for UPCOMING IPOs — companies that have NOT yet listed or started trading. Include only pipeline deals: S-1/DRHP filings, active book-building periods, confirmed upcoming pricings, and allotments for deals listing in the next 1-30 days. Do NOT include companies that have already begun trading on their first day or later.
 
 ${regionScope}
 
-Return a JSON array (and ONLY the JSON array, no markdown fences, no explanation) of IPO events. Each object must strictly follow this schema:
+Return a JSON array (and ONLY the JSON array, no markdown fences, no explanation) of upcoming IPO events. Each object must strictly follow this schema:
 
 {
   "company": "string — full legal company name",
-  "ticker": "string or null — exchange ticker symbol",
+  "ticker": "string or null — proposed ticker symbol if announced",
   "exchange": "string — e.g. NYSE, Nasdaq Global Select, LSE, HKEX Main Board, BSE SME",
   "region": "string — MUST be one of exactly: NORTH_AMERICA, EUROPE, EAST_ASIA, SOUTH_ASIA, MIDDLE_EAST, OCEANIA",
   "sector": "string — e.g. Fintech, Healthcare, Technology, Energy",
-  "eventType": "string — MUST be one of exactly: S1_FILED, PRICING, DAY1_LISTING, BOOK_BUILDING, SPAC, DIRECT_LISTING, UPLISTING, ALLOTMENT, WITHDRAWAL, RUMOR",
-  "raiseAmountUSD": "string or null — e.g. $500M, $1.2B",
+  "eventType": "string — MUST be one of exactly: S1_FILED, BOOK_BUILDING, ALLOTMENT, PRICING, SPAC, DIRECT_LISTING, UPLISTING, RUMOR",
+  "raiseAmountUSD": "string or null — target raise in USD, e.g. $500M, $1.2B",
   "raiseAmountLocal": "string or null — e.g. ₹420Cr, HK$2.1B",
-  "offerPrice": "string or null — e.g. $18.00, ₹72",
-  "priceBand": "string or null — e.g. ₹68-72",
-  "postMoneyValuation": "string or null — e.g. $4.5B",
+  "offerPrice": "string or null — fixed offer price if set, e.g. $18.00, ₹72",
+  "priceBand": "string or null — price band if in book-building, e.g. ₹68-72",
+  "postMoneyValuation": "string or null — expected valuation, e.g. $4.5B",
   "subscriptionQIB": number or null,
   "subscriptionNII": number or null,
   "subscriptionRetail": number or null,
   "subscriptionOverall": number or null,
-  "gmp": "string or null — grey market premium, e.g. +₹18",
-  "day1Performance": number or null — percentage gain/loss on listing day,
+  "gmp": "string or null — grey market premium if available, e.g. +₹18",
+  "day1Performance": null,
   "lotSize": number or null,
   "leadBookrunners": ["string"] or null,
-  "listingDate": "string or null — ISO date YYYY-MM-DD",
-  "filingDate": "string or null — ISO date YYYY-MM-DD",
-  "summary": "string — 2-3 sentence factual summary with financial context",
-  "source": "string — news source or exchange URL"
+  "listingDate": "string or null — expected listing date ISO YYYY-MM-DD",
+  "filingDate": "string or null — S-1/DRHP filing date ISO YYYY-MM-DD",
+  "summary": "string — 2-3 sentence summary covering deal size, expected listing date, and what the company does",
+  "source": "string — news source URL or exchange filing URL"
 }
 
-Include 10-20 events. Use precise figures from actual news sources. Return ONLY the JSON array starting with [ and ending with ].`;
+Include 10-20 upcoming deals. Use precise figures from actual regulatory filings and news sources. Return ONLY the JSON array starting with [ and ending with ].`;
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
