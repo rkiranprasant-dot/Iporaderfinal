@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import {
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -15,12 +16,12 @@ import { MetricBadge } from "@/components/MetricBadge";
 import {
   EVENT_TYPE_COLORS,
   EVENT_TYPE_LABELS,
-  MOCK_IPO_EVENTS,
   REGION_COLORS,
   REGION_LABELS,
 } from "@/constants/mockData";
 import { useWatchlist } from "@/context/WatchlistContext";
 import { useColors } from "@/hooks/useColors";
+import { findEventById } from "@/lib/eventsStore";
 
 interface DetailRowProps {
   label: string;
@@ -57,17 +58,26 @@ function SectionCard({ title, children }: SectionCardProps) {
   );
 }
 
+const REGION_FILING_LABELS: Record<string, string> = {
+  NORTH_AMERICA: "SEC EDGAR",
+  EUROPE: "Exchange Prospectus",
+  EAST_ASIA: "HKEX / TSE / SGX Filing",
+  SOUTH_ASIA: "BSE / NSE / SEBI Filing",
+  MIDDLE_EAST: "Tadawul / DFM Filing",
+  OCEANIA: "ASX / ASIC Filing",
+};
+
 export default function IPODetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { isWatched, toggleWatch } = useWatchlist();
 
-  const event = MOCK_IPO_EVENTS.find((e) => e.id === id);
+  const event = findEventById(id ?? "");
   const watched = event ? isWatched(event.id) : false;
 
   const bottomPadding = Platform.OS === "web" ? 34 + 16 : insets.bottom + 16;
+  const isRumor = event?.eventType === "RUMOR";
 
   if (!event) {
     return (
@@ -79,6 +89,7 @@ export default function IPODetailScreen() {
 
   const eventColor = EVENT_TYPE_COLORS[event.eventType];
   const regionColor = REGION_COLORS[event.region];
+  const filingLabel = REGION_FILING_LABELS[event.region] ?? "Regulatory Filing";
 
   return (
     <>
@@ -104,7 +115,20 @@ export default function IPODetailScreen() {
         contentContainerStyle={{ paddingBottom: bottomPadding }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.heroCard, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <View style={[
+          styles.heroCard,
+          {
+            backgroundColor: colors.card,
+            borderBottomColor: isRumor ? "#94a3b844" : colors.border,
+            borderLeftWidth: isRumor ? 0 : 0,
+          }
+        ]}>
+          {isRumor && (
+            <View style={styles.rumorWarning}>
+              <Feather name="alert-triangle" size={12} color="#b45308" />
+              <Text style={styles.rumorWarningText}>UNVERIFIED MARKET RUMOR — Not a confirmed filing</Text>
+            </View>
+          )}
           <View style={styles.badgeRow}>
             <View style={[styles.eventBadge, { backgroundColor: eventColor + "22", borderColor: eventColor + "55" }]}>
               <Text style={[styles.eventBadgeText, { color: eventColor }]}>
@@ -130,7 +154,7 @@ export default function IPODetailScreen() {
               <MetricBadge label="Raise (USD)" value={event.raiseAmountUSD} />
             )}
             {event.postMoneyValuation && (
-              <MetricBadge label="Valuation" value={event.postMoneyValuation} />
+              <MetricBadge label={isRumor ? "Est. Valuation" : "Valuation"} value={event.postMoneyValuation} />
             )}
             {event.day1Performance != null && (
               <MetricBadge
@@ -147,6 +171,18 @@ export default function IPODetailScreen() {
               />
             )}
           </View>
+
+          {event.filingUrl && (
+            <Pressable
+              onPress={() => Linking.openURL(event.filingUrl!)}
+              style={[styles.filingButton, { borderColor: colors.primary + "66", backgroundColor: colors.primary + "14" }]}
+            >
+              <Feather name="external-link" size={13} color={colors.primary} />
+              <Text style={[styles.filingButtonText, { color: colors.primary }]}>
+                View {filingLabel}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.content}>
@@ -200,10 +236,27 @@ export default function IPODetailScreen() {
             </Text>
           </SectionCard>
 
-          <SectionCard title="Information Verification Source">
-            <Text style={[styles.summaryText, { color: colors.mutedForeground }]}>
-              {event.source}
-            </Text>
+          <SectionCard title="Information Source & Verification">
+            {event.filingUrl ? (
+              <View style={styles.sourceWithLink}>
+                <Text style={[styles.summaryText, { color: colors.mutedForeground }]}>
+                  {event.source}
+                </Text>
+                <Pressable
+                  onPress={() => Linking.openURL(event.filingUrl!)}
+                  style={[styles.sourceLink, { borderColor: colors.border }]}
+                >
+                  <Feather name="external-link" size={12} color={colors.primary} />
+                  <Text style={[styles.sourceLinkText, { color: colors.primary }]}>
+                    Open {filingLabel}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Text style={[styles.summaryText, { color: colors.mutedForeground }]}>
+                {event.source}
+              </Text>
+            )}
           </SectionCard>
         </View>
       </ScrollView>
@@ -222,6 +275,25 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     gap: 6,
+  },
+  rumorWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#b4530814",
+    borderWidth: 1,
+    borderColor: "#b4530844",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 4,
+  },
+  rumorWarningText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    color: "#b45308",
+    letterSpacing: 0.3,
+    flex: 1,
   },
   badgeRow: {
     flexDirection: "row",
@@ -275,6 +347,21 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     marginTop: 8,
   },
+  filingButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: "flex-start",
+  },
+  filingButtonText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
   content: {
     padding: 16,
     gap: 12,
@@ -320,5 +407,24 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     lineHeight: 20,
     padding: 12,
+  },
+  sourceWithLink: {
+    gap: 0,
+  },
+  sourceLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    margin: 12,
+    marginTop: 0,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 7,
+    borderWidth: 1,
+    alignSelf: "flex-start",
+  },
+  sourceLinkText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
   },
 });

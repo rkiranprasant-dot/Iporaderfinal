@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { IPOEventCard } from "@/components/IPOEventCard";
 import { SectionHeader } from "@/components/SectionHeader";
-import { Region, REGION_COLORS, REGION_LABELS } from "@/constants/mockData";
+import { IPOEvent, Region, REGION_COLORS, REGION_LABELS } from "@/constants/mockData";
 import { useLiveIPOEvents, DataSource } from "@/hooks/useLiveIPOEvents";
 import { useColors } from "@/hooks/useColors";
 
@@ -27,6 +27,21 @@ const REGIONS_ORDER: Region[] = [
   "MIDDLE_EAST",
   "OCEANIA",
 ];
+
+function parseRaiseUSDMillions(val?: string): number {
+  if (!val) return 0;
+  const lower = val.toLowerCase();
+  const num = parseFloat(val.replace(/[^0-9.]/g, ""));
+  if (isNaN(num)) return 0;
+  if (lower.includes("b")) return num * 1000;
+  if (lower.includes("m")) return num;
+  return 0;
+}
+
+function isMegaDeal(event: IPOEvent): boolean {
+  if (event.eventType === "RUMOR") return false;
+  return parseRaiseUSDMillions(event.raiseAmountUSD) >= 1000;
+}
 
 function LiveBadge({ dataSource, fetchedAt, onRefresh, colors }: {
   dataSource: DataSource;
@@ -85,7 +100,7 @@ function LiveBadge({ dataSource, fetchedAt, onRefresh, colors }: {
         return (
           <View style={[styles.livePill, { backgroundColor: "#b4530818", borderColor: "#b4530844" }]}>
             <Feather name="clock" size={10} color="#b45308" />
-            <Text style={[styles.livePillText, { color: "#b45308" }]}>Quota limit · sample data</Text>
+            <Text style={[styles.livePillText, { color: "#b45308" }]}>AI quota full · using sample data</Text>
           </View>
         );
       default:
@@ -117,7 +132,7 @@ export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { events, isLoading, isLive, isCached, dataSource, fetchedAt, totalRaised, refetch } = useLiveIPOEvents();
+  const { events, isLoading, dataSource, fetchedAt, totalRaised, refetch } = useLiveIPOEvents();
 
   const stats = useMemo(() => {
     const total = events.length;
@@ -134,6 +149,16 @@ export default function DashboardScreen() {
     }
     return counts;
   }, [events]);
+
+  const megaDeals = useMemo(
+    () => events.filter(isMegaDeal).slice(0, 5),
+    [events]
+  );
+
+  const rumors = useMemo(
+    () => events.filter((e) => e.eventType === "RUMOR").slice(0, 4),
+    [events]
+  );
 
   const hotDeals = useMemo(
     () =>
@@ -236,6 +261,47 @@ export default function DashboardScreen() {
             );
           })}
         </ScrollView>
+
+        {megaDeals.length > 0 && (
+          <>
+            <SectionHeader
+              title="Mega Deals"
+              subtitle="$1B+ raises this window"
+              right={
+                <View style={styles.megaSectionBadge}>
+                  <Text style={styles.megaSectionBadgeText}>🏆 Blockbusters</Text>
+                </View>
+              }
+            />
+            <FlatList
+              data={megaDeals}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <IPOEventCard event={item} />}
+              scrollEnabled={false}
+            />
+          </>
+        )}
+
+        {rumors.length > 0 && (
+          <>
+            <SectionHeader
+              title="Market Rumors & Hyped Names"
+              subtitle="Unverified — institutional chatter"
+              right={
+                <View style={styles.rumorSectionBadge}>
+                  <Feather name="alert-triangle" size={10} color="#b45308" />
+                  <Text style={styles.rumorSectionBadgeText}>UNCONFIRMED</Text>
+                </View>
+              }
+            />
+            <FlatList
+              data={rumors}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <IPOEventCard event={item} />}
+              scrollEnabled={false}
+            />
+          </>
+        )}
 
         <SectionHeader title="Coming Up" subtitle="Active pricings & book-building" />
         {hotDeals.length > 0 ? (
@@ -391,6 +457,36 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_400Regular",
     marginTop: 1,
+  },
+  megaSectionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "#eab30818",
+    borderWidth: 1,
+    borderColor: "#eab30844",
+  },
+  megaSectionBadgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    color: "#eab308",
+  },
+  rumorSectionBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "#b4530814",
+    borderWidth: 1,
+    borderColor: "#b4530844",
+  },
+  rumorSectionBadgeText: {
+    fontSize: 9,
+    fontFamily: "Inter_700Bold",
+    color: "#b45308",
+    letterSpacing: 0.5,
   },
   emptySection: {
     borderWidth: 1,

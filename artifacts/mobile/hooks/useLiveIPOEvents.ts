@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useGetLiveIpoEvents } from "@workspace/api-client-react";
 
 import { MOCK_IPO_EVENTS, IPOEvent, EventType, Region } from "@/constants/mockData";
+import { updateLiveEventsCache } from "@/lib/eventsStore";
 
 function parseUSDMillions(val?: string): number {
   if (!val) return 0;
@@ -86,8 +88,8 @@ export interface LiveIPOState {
 export function useLiveIPOEvents(): LiveIPOState {
   const { data, isLoading, isError, error, refetch } = useGetLiveIpoEvents(undefined, {
     query: {
-      staleTime: 15 * 60 * 1000,
-      gcTime: 30 * 60 * 1000,
+      staleTime: 6 * 60 * 60 * 1000,
+      gcTime: 12 * 60 * 60 * 1000,
       retry: false,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
@@ -129,11 +131,16 @@ export function useLiveIPOEvents(): LiveIPOState {
           leadBookrunners: e.leadBookrunners ?? undefined,
           listingDate: e.listingDate ?? undefined,
           filingDate: e.filingDate ?? undefined,
+          filingUrl: (e as unknown as { filingUrl?: string }).filingUrl ?? undefined,
           summary: e.summary,
           source: e.source,
         }))
         .sort(sortByDate)
     : MOCK_UPCOMING_EVENTS;
+
+  useEffect(() => {
+    updateLiveEventsCache(events);
+  }, [events]);
 
   const dataSource: DataSource = isLoading
     ? "loading"
