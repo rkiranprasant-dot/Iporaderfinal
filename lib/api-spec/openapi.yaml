@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: report
+    description: AI-generated IPO intelligence reports
 paths:
   /healthz:
     get:
@@ -24,6 +26,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /report/generate:
+    post:
+      operationId: generateReport
+      tags: [report]
+      summary: Generate a Global IPO Intelligence Report using Gemini AI
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportGenerateInput"
+      responses:
+        "200":
+          description: Generated report content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportOutput"
+        "500":
+          description: Generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +59,33 @@ components:
           type: string
       required:
         - status
-
+    ReportGenerateInput:
+      type: object
+      properties:
+        region:
+          type: string
+          description: Optional region filter (e.g. "North America", "South Asia")
+        focus:
+          type: string
+          description: Optional focus area or keywords
+    ReportOutput:
+      type: object
+      properties:
+        content:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        region:
+          type: string
+      required:
+        - content
+        - generatedAt
+        - region
+    ReportError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

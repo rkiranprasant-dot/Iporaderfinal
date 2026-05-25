@@ -13,9 +13,12 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { WatchlistProvider } from "@/context/WatchlistContext";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
@@ -24,6 +27,13 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="ipo/[id]"
+        options={{
+          presentation: "card",
+          headerBackTitle: "Back",
+        }}
+      />
     </Stack>
   );
 }
@@ -50,7 +60,9 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <RootLayoutNav />
+              <WatchlistProvider>
+                <RootLayoutNav />
+              </WatchlistProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

@@ -9,16 +9,24 @@ import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 
-// IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
-// NativeTabs intentionally does NOT use custom design tokens — liquid glass
-// is a system-level appearance provided by iOS and cannot be overridden.
-// Custom brand colors are applied only on the ClassicTabLayout path (older iOS / Android / web).
 function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
+        <Label>Dashboard</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="feed">
+        <Icon sf={{ default: "chart.line.uptrend.xyaxis", selected: "chart.line.uptrend.xyaxis" }} />
+        <Label>Feed</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="report">
+        <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
+        <Label>Report</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="watchlist">
+        <Icon sf={{ default: "bookmark", selected: "bookmark.fill" }} />
+        <Label>Watchlist</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -37,10 +45,20 @@ function ClassicTabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: true,
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.foreground,
+        headerTitleStyle: {
+          fontFamily: "Inter_600SemiBold",
+          color: colors.foreground,
+          fontSize: 17,
+        },
+        headerShadowVisible: false,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
+          backgroundColor: isIOS ? "transparent" : colors.card,
+          borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
           ...(isWeb ? { height: 84 } : {}),
@@ -48,29 +66,66 @@ function ClassicTabLayout() {
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
+              intensity={80}
+              tint={isDark ? "dark" : "dark"}
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
             <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]}
             />
           ) : null,
+        tabBarLabelStyle: {
+          fontFamily: "Inter_500Medium",
+          fontSize: 10,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Dashboard",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
+              <SymbolView name="house" tintColor={color} size={22} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Feather name="home" size={21} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="feed"
+        options={{
+          title: "IPO Feed",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="chart.line.uptrend.xyaxis" tintColor={color} size={22} />
+            ) : (
+              <Feather name="activity" size={21} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="report"
+        options={{
+          title: "Intelligence",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="doc.text" tintColor={color} size={22} />
+            ) : (
+              <Feather name="file-text" size={21} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="watchlist"
+        options={{
+          title: "Watchlist",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="bookmark" tintColor={color} size={22} />
+            ) : (
+              <Feather name="bookmark" size={21} color={color} />
             ),
         }}
       />

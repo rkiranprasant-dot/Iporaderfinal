@@ -5,9 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
 
 export interface ReportGenerateInput {
   /** Optional region filter (e.g. "North America", "South Asia") */
@@ -15,14 +12,3 @@ export interface ReportGenerateInput {
   /** Optional focus area or keywords */
   focus?: string;
 }
-
-export interface ReportOutput {
-  content: string;
-  generatedAt: string;
-  region: string;
-}
-
-export interface ReportError {
-  error: string;
-}
-
