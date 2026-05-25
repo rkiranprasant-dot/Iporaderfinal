@@ -44,9 +44,9 @@ router.post("/generate", async (req, res) => {
     const body = req.body as { region?: string; focus?: string };
     const { region, focus } = body;
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: "v1" });
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-pro",
       systemInstruction: REPORT_SYSTEM_PROMPT,
     });
 

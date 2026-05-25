@@ -16,7 +16,7 @@ A professional-grade mobile app for institutional investors to track global IPO 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - Mobile: Expo (React Native) with Expo Router
 - API: Express 5
-- AI: Google Gemini (`gemini-2.0-flash`) via `@google/generative-ai`
+- AI: Google Gemini (`gemini-2.5-pro`) via `@google/generative-ai` (v1 API)
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
@@ -37,7 +37,7 @@ A professional-grade mobile app for institutional investors to track global IPO 
 - Both `light` and `dark` color palettes use the same dark financial theme
 - AI report generation is server-side only (API key never exposed to client)
 - The `setBaseUrl` call in `_layout.tsx` ensures Expo can reach the API server via absolute URL
-- Gemini `gemini-2.0-flash` model used for fast report generation
+- Gemini `gemini-2.5-pro` model used for both report generation and live IPO data (Google Search grounding); requires `apiVersion: "v1"` in the SDK constructor
 
 ## Product
 
