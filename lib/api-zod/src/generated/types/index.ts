@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './getLiveIpoEventsParams';
 export * from './healthStatus';
+export * from './liveIPOEvent';
+export * from './liveIPOEventsResponse';
 export * from './reportError';
 export * from './reportGenerateInput';
 export * from './reportOutput';

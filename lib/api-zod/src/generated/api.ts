@@ -32,3 +32,43 @@ export const GenerateReportResponse = zod.object({
 })
 
 
+/**
+ * @summary Fetch live IPO events via Gemini Google Search grounding
+ */
+export const GetLiveIpoEventsQueryParams = zod.object({
+  "region": zod.coerce.string().optional().describe('Optional region filter (e.g. NORTH_AMERICA, EUROPE)')
+})
+
+export const GetLiveIpoEventsResponse = zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "company": zod.string(),
+  "ticker": zod.string().optional(),
+  "exchange": zod.string(),
+  "region": zod.string().describe('One of: NORTH_AMERICA, EUROPE, EAST_ASIA, SOUTH_ASIA, MIDDLE_EAST, OCEANIA'),
+  "sector": zod.string(),
+  "eventType": zod.string().describe('One of: S1_FILED, PRICING, DAY1_LISTING, BOOK_BUILDING, SPAC, DIRECT_LISTING, UPLISTING, ALLOTMENT, WITHDRAWAL, RUMOR'),
+  "raiseAmountUSD": zod.string().optional(),
+  "raiseAmountLocal": zod.string().optional(),
+  "offerPrice": zod.string().optional(),
+  "priceBand": zod.string().optional(),
+  "postMoneyValuation": zod.string().optional(),
+  "subscriptionQIB": zod.number().optional(),
+  "subscriptionNII": zod.number().optional(),
+  "subscriptionRetail": zod.number().optional(),
+  "subscriptionOverall": zod.number().optional(),
+  "gmp": zod.string().optional(),
+  "day1Performance": zod.number().optional(),
+  "lotSize": zod.number().optional(),
+  "leadBookrunners": zod.array(zod.string()).optional(),
+  "listingDate": zod.string().optional(),
+  "filingDate": zod.string().optional(),
+  "summary": zod.string(),
+  "source": zod.string()
+})),
+  "fetchedAt": zod.coerce.date(),
+  "cached": zod.boolean(),
+  "totalCount": zod.number()
+})
+
+

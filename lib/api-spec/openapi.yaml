@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: report
     description: AI-generated IPO intelligence reports
+  - name: ipo
+    description: IPO event data
 paths:
   /healthz:
     get:
@@ -46,6 +48,31 @@ paths:
                 $ref: "#/components/schemas/ReportOutput"
         "500":
           description: Generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportError"
+  /ipo/live:
+    get:
+      operationId: getLiveIpoEvents
+      tags: [ipo]
+      summary: Fetch live IPO events via Gemini Google Search grounding
+      parameters:
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional region filter (e.g. NORTH_AMERICA, EUROPE)
+      responses:
+        "200":
+          description: Live IPO events with metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveIPOEventsResponse"
+        "500":
+          description: Fetch failed
           content:
             application/json:
               schema:
@@ -89,3 +116,86 @@ components:
           type: string
       required:
         - error
+    LiveIPOEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        company:
+          type: string
+        ticker:
+          type: string
+        exchange:
+          type: string
+        region:
+          type: string
+          description: "One of: NORTH_AMERICA, EUROPE, EAST_ASIA, SOUTH_ASIA, MIDDLE_EAST, OCEANIA"
+        sector:
+          type: string
+        eventType:
+          type: string
+          description: "One of: S1_FILED, PRICING, DAY1_LISTING, BOOK_BUILDING, SPAC, DIRECT_LISTING, UPLISTING, ALLOTMENT, WITHDRAWAL, RUMOR"
+        raiseAmountUSD:
+          type: string
+        raiseAmountLocal:
+          type: string
+        offerPrice:
+          type: string
+        priceBand:
+          type: string
+        postMoneyValuation:
+          type: string
+        subscriptionQIB:
+          type: number
+        subscriptionNII:
+          type: number
+        subscriptionRetail:
+          type: number
+        subscriptionOverall:
+          type: number
+        gmp:
+          type: string
+        day1Performance:
+          type: number
+        lotSize:
+          type: number
+        leadBookrunners:
+          type: array
+          items:
+            type: string
+        listingDate:
+          type: string
+        filingDate:
+          type: string
+        summary:
+          type: string
+        source:
+          type: string
+      required:
+        - id
+        - company
+        - exchange
+        - region
+        - sector
+        - eventType
+        - summary
+        - source
+    LiveIPOEventsResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveIPOEvent"
+        fetchedAt:
+          type: string
+          format: date-time
+        cached:
+          type: boolean
+        totalCount:
+          type: integer
+      required:
+        - events
+        - fetchedAt
+        - cached
+        - totalCount

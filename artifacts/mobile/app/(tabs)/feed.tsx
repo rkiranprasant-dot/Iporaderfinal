@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Platform,
   Pressable,
@@ -16,13 +17,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IPOEventCard } from "@/components/IPOEventCard";
 import {
   EventType,
-  MOCK_IPO_EVENTS,
   Region,
   REGION_COLORS,
   REGION_LABELS,
   REGIONS,
   EVENT_TYPE_LABELS,
 } from "@/constants/mockData";
+import { useLiveIPOEvents } from "@/hooks/useLiveIPOEvents";
 import { useColors } from "@/hooks/useColors";
 
 const EVENT_FILTERS: { key: EventType | "ALL"; label: string }[] = [
@@ -41,6 +42,7 @@ export default function FeedScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ region?: string }>();
+  const { events, isLoading, isLive, isCached, dataSource, refetch } = useLiveIPOEvents();
 
   const [search, setSearch] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<Region | "ALL">(
@@ -49,7 +51,7 @@ export default function FeedScreen() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | "ALL">("ALL");
 
   const filtered = useMemo(() => {
-    return MOCK_IPO_EVENTS.filter((e) => {
+    return events.filter((e) => {
       if (selectedRegion !== "ALL" && e.region !== selectedRegion) return false;
       if (selectedEvent !== "ALL" && e.eventType !== selectedEvent) return false;
       if (search.trim()) {
@@ -63,7 +65,7 @@ export default function FeedScreen() {
       }
       return true;
     });
-  }, [selectedRegion, selectedEvent, search]);
+  }, [events, selectedRegion, selectedEvent, search]);
 
   const topPadding = Platform.OS === "web" ? 67 : 0;
   const bottomPadding = Platform.OS === "web" ? 34 + 84 : insets.bottom + 80;
@@ -71,21 +73,59 @@ export default function FeedScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.filterBar, { paddingTop: topPadding + 8, borderBottomColor: colors.border }]}>
-        <View style={[styles.searchRow, { backgroundColor: colors.input, borderColor: colors.border }]}>
-          <Feather name="search" size={15} color={colors.mutedForeground} />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search companies, exchanges..."
-            placeholderTextColor={colors.mutedForeground}
-            style={[styles.searchInput, { color: colors.foreground }]}
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch("")}>
-              <Feather name="x" size={15} color={colors.mutedForeground} />
-            </Pressable>
-          )}
+        <View style={styles.searchAndStatus}>
+          <View style={[styles.searchRow, { backgroundColor: colors.input, borderColor: colors.border }]}>
+            <Feather name="search" size={15} color={colors.mutedForeground} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search companies, exchanges..."
+              placeholderTextColor={colors.mutedForeground}
+              style={[styles.searchInput, { color: colors.foreground }]}
+            />
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch("")}>
+                <Feather name="x" size={15} color={colors.mutedForeground} />
+              </Pressable>
+            )}
+          </View>
+          <Pressable
+            onPress={refetch}
+            style={[styles.refreshBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+          >
+            {isLoading ? (
+              <ActivityIndicator size={12} color={colors.mutedForeground} />
+            ) : (
+              <Feather name="refresh-cw" size={12} color={isLive ? "#16a34a" : colors.mutedForeground} />
+            )}
+          </Pressable>
         </View>
+
+        {dataSource !== "loading" && (
+          <View style={styles.liveRow}>
+            {(dataSource === "live" || dataSource === "cached") ? (
+              <View style={[styles.livePill, { backgroundColor: "#16a34a18", borderColor: "#16a34a44" }]}>
+                <View style={[styles.liveDot, { backgroundColor: "#16a34a" }]} />
+                <Text style={[styles.livePillText, { color: "#16a34a" }]}>
+                  LIVE{dataSource === "cached" ? " · cached" : " · fresh"}
+                </Text>
+              </View>
+            ) : dataSource === "rate_limited" ? (
+              <View style={[styles.livePill, { backgroundColor: "#b4530818", borderColor: "#b4530844" }]}>
+                <Feather name="clock" size={10} color="#b45308" />
+                <Text style={[styles.livePillText, { color: "#b45308" }]}>Quota limit · tap ↻ to retry</Text>
+              </View>
+            ) : (
+              <View style={[styles.livePill, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                <Feather name="database" size={10} color={colors.mutedForeground} />
+                <Text style={[styles.livePillText, { color: colors.mutedForeground }]}>Sample data</Text>
+              </View>
+            )}
+            <Text style={[styles.liveCount, { color: colors.mutedForeground }]}>
+              {events.length} events{isLive ? " via Google Search" : ""}
+            </Text>
+          </View>
+        )}
 
         <ScrollView
           horizontal
@@ -166,15 +206,25 @@ export default function FeedScreen() {
         ListHeaderComponent={
           <Text style={[styles.resultCount, { color: colors.mutedForeground }]}>
             {filtered.length} {filtered.length === 1 ? "event" : "events"}
+            {isLive ? " · live" : " · sample"}
           </Text>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Feather name="inbox" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              No events match your filters
-            </Text>
-          </View>
+          isLoading ? (
+            <View style={styles.empty}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                Fetching live IPO data…
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Feather name="inbox" size={40} color={colors.mutedForeground} />
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                No events match your filters
+              </Text>
+            </View>
+          )
         }
       />
     </View>
@@ -190,11 +240,17 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingBottom: 8,
   },
-  searchRow: {
+  searchAndStatus: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginHorizontal: 16,
+    paddingHorizontal: 16,
+  },
+  searchRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
@@ -203,6 +259,43 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
+  refreshBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  liveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  livePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  livePillText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.5,
+  },
+  liveCount: {
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
   },
   chipsRow: {

@@ -20,7 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  GetLiveIpoEventsParams,
   HealthStatus,
+  LiveIPOEventsResponse,
   ReportError,
   ReportGenerateInput,
   ReportOutput
@@ -186,4 +188,88 @@ export const useGenerateReport = <TError = ErrorType<ReportError>,
       > => {
       return useMutation(getGenerateReportMutationOptions(options));
     }
+
+export const getGetLiveIpoEventsUrl = (params?: GetLiveIpoEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/ipo/live?${stringifiedParams}` : `/api/ipo/live`
+}
+
+/**
+ * @summary Fetch live IPO events via Gemini Google Search grounding
+ */
+export const getLiveIpoEvents = async (params?: GetLiveIpoEventsParams, options?: RequestInit): Promise<LiveIPOEventsResponse> => {
+
+  return customFetch<LiveIPOEventsResponse>(getGetLiveIpoEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLiveIpoEventsQueryKey = (params?: GetLiveIpoEventsParams,) => {
+    return [
+    `/api/ipo/live`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetLiveIpoEventsQueryOptions = <TData = Awaited<ReturnType<typeof getLiveIpoEvents>>, TError = ErrorType<ReportError>>(params?: GetLiveIpoEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLiveIpoEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLiveIpoEventsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLiveIpoEvents>>> = ({ signal }) => getLiveIpoEvents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLiveIpoEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLiveIpoEventsQueryResult = NonNullable<Awaited<ReturnType<typeof getLiveIpoEvents>>>
+export type GetLiveIpoEventsQueryError = ErrorType<ReportError>
+
+
+/**
+ * @summary Fetch live IPO events via Gemini Google Search grounding
+ */
+
+export function useGetLiveIpoEvents<TData = Awaited<ReturnType<typeof getLiveIpoEvents>>, TError = ErrorType<ReportError>>(
+ params?: GetLiveIpoEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLiveIpoEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLiveIpoEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

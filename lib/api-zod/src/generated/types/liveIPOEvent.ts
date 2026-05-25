@@ -5,26 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
-
-export interface ReportGenerateInput {
-  /** Optional region filter (e.g. "North America", "South Asia") */
-  region?: string;
-  /** Optional focus area or keywords */
-  focus?: string;
-}
-
-export interface ReportOutput {
-  content: string;
-  generatedAt: string;
-  region: string;
-}
-
-export interface ReportError {
-  error: string;
-}
 
 export interface LiveIPOEvent {
   id: string;
@@ -54,18 +34,3 @@ export interface LiveIPOEvent {
   summary: string;
   source: string;
 }
-
-export interface LiveIPOEventsResponse {
-  events: LiveIPOEvent[];
-  fetchedAt: string;
-  cached: boolean;
-  totalCount: number;
-}
-
-export type GetLiveIpoEventsParams = {
-/**
- * Optional region filter (e.g. NORTH_AMERICA, EUROPE)
- */
-region?: string;
-};
-
