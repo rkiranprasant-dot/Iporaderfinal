@@ -2,12 +2,12 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-  Linking,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { openUrl } from "@/lib/openUrl";
 
 import {
   EVENT_TYPE_COLORS,
@@ -168,7 +168,7 @@ export function IPOEventCard({ event, compact = false }: IPOEventCardProps) {
             <Pressable
               onPress={(e) => {
                 e.stopPropagation();
-                if (event.filingUrl) Linking.openURL(event.filingUrl);
+                if (event.filingUrl) openUrl(event.filingUrl);
               }}
               style={[styles.filingBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "11" }]}
               hitSlop={8}

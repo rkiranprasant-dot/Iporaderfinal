@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import {
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -10,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { openUrl } from "@/lib/openUrl";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MetricBadge } from "@/components/MetricBadge";
@@ -174,7 +174,7 @@ export default function IPODetailScreen() {
 
           {event.filingUrl && (
             <Pressable
-              onPress={() => Linking.openURL(event.filingUrl!)}
+              onPress={() => openUrl(event.filingUrl!)}
               style={[styles.filingButton, { borderColor: colors.primary + "66", backgroundColor: colors.primary + "14" }]}
             >
               <Feather name="external-link" size={13} color={colors.primary} />
@@ -243,7 +243,7 @@ export default function IPODetailScreen() {
                   {event.source}
                 </Text>
                 <Pressable
-                  onPress={() => Linking.openURL(event.filingUrl!)}
+                  onPress={() => openUrl(event.filingUrl!)}
                   style={[styles.sourceLink, { borderColor: colors.border }]}
                 >
                   <Feather name="external-link" size={12} color={colors.primary} />

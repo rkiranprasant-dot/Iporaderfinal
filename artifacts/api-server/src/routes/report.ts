@@ -4,42 +4,27 @@ import { Router } from "express";
 const router = Router();
 
 const MODELS = [
-  { model: "gemini-2.5-pro", apiVersion: "v1" as const },
-  { model: "gemini-2.0-flash", apiVersion: "v1beta" as const },
-  { model: "gemini-2.0-flash-lite", apiVersion: "v1beta" as const },
+  { model: "gemini-2.5-pro",        apiVersion: "v1" as const,    grounded: true },
+  { model: "gemini-2.0-flash",      apiVersion: "v1beta" as const, grounded: true },
+  { model: "gemini-1.5-flash",      apiVersion: "v1beta" as const, grounded: true },
+  { model: "gemini-2.0-flash-lite", apiVersion: "v1beta" as const, grounded: true },
+  { model: "gemini-2.0-flash",      apiVersion: "v1beta" as const, grounded: false }, // no-search fallback
 ];
 
-const REPORT_SYSTEM_PROMPT = `You are an elite quantitative research analyst and primary markets data engineer specializing in global IPO markets. Generate a comprehensive Global IPO Intelligence Report covering material initial public offering events across all major exchanges.
+const REPORT_SYSTEM_PROMPT = `You are an elite quantitative research analyst specializing in global IPO markets. Generate a comprehensive Global IPO Intelligence Report.
 
-Coverage scope:
-- North America: NYSE, Nasdaq (Global Select, Global Market, Capital Market), TSX, TSX Venture
-- UK & Europe: LSE, AIM, Euronext (Paris, Amsterdam, Brussels, Dublin, Oslo, Milan), Deutsche Börse (Frankfurt, Scale), SIX Swiss
-- East Asia: HKEX (Main Board and GEM), SSE, SZSE, TSE, TWSE, SGX, KOSPI/KOSDAQ
-- South Asia: BSE and NSE Mainboard AND SME platforms (BSE SME, NSE Emerge)
-- Middle East & Africa: ADX, DFM, Tadawul, Boursa Kuwait, Muscat Stock Exchange
-- Oceania: ASX, NZX
+Coverage: NYSE, Nasdaq, TSX, LSE, AIM, Euronext, Deutsche Börse, SIX, HKEX, SSE, SZSE, TSE, TWSE, SGX, KOSPI/KOSDAQ, BSE, NSE (Mainboard + SME), ADX, DFM, Tadawul, ASX, NZX.
 
-For each IPO event include:
-- Company name, exchange, ticker symbol
-- Event classification (S-1 Filed / Pricing / Day 1 Listing / Book Building / SPAC / Direct Listing / Uplisting / Allotment / Withdrawal / Market Rumor)
-- Deal mechanics: raise size in local currency and USD equivalent, offer price/price band, post-money valuation
-- Subscription data: QIB/NII/Retail multiples, Grey Market Premium (GMP), Day 1 trading vs offer price
-- Lead bookrunners and legal counsel
-- 2-3 sentence operational summary with financial context
-- Direct filing URL (SEC EDGAR, HKEX, BSE, NSE, exchange website)
+For each deal include: company, exchange, ticker, event type, raise size in local + USD, offer price/band, post-money valuation, subscription multiples (QIB/NII/Retail), GMP, Day 1 performance, bookrunners, 2-3 sentence operational summary, and direct filing URL.
 
-Format output in Markdown with clear headers. Structure:
-1. ## Global Activity Dashboard (summary table)
-2. Regional sections with full company profiles
-3. ## Mega Deals & Market Movers (deals $1B+, rumored unicorn listings)
-4. ## SME Market Table (BSE SME / NSE Emerge)
-5. ## Week Ahead Pipeline Intelligence
+Structure output in Markdown:
+1. ## Global Activity Dashboard (summary stats table)
+2. Regional sections (North America / Europe / East Asia / South Asia / Middle East / Oceania)
+3. ## Mega Deals & Market Movers ($1B+ raises, rumored unicorn listings like SpaceX, Stripe)
+4. ## SME Market Pulse (BSE SME / NSE Emerge)
+5. ## Week Ahead Pipeline
 
-DATA INTEGRITY RULES:
-- Mark unavailable metrics as "Not Available in Public Sources"
-- Label market rumors explicitly with ⚠ UNVERIFIED
-- Use exact figures (e.g. "21.43x"), never vague qualifiers ("strong demand")
-- If an exchange has no activity, state "[Exchange]: No material activity in this window"`;
+RULES: Mark unavailable metrics "N/A". Label rumors "⚠ UNVERIFIED". Use exact figures. State no-activity exchanges explicitly.`;
 
 router.post("/generate", async (req, res) => {
   const apiKey = process.env["GOOGLE_API_KEY"];
@@ -56,47 +41,39 @@ router.post("/generate", async (req, res) => {
   });
   const scope = region ? `the ${region} region` : "all major global exchanges";
   const focusNote = focus ? ` Pay particular attention to: ${focus}.` : "";
-  const userPrompt = `Generate a Global IPO Intelligence Report for ${scope} covering the 48-hour window ending today, ${today}.${focusNote}
+  const userPrompt = `Generate a Global IPO Intelligence Report for ${scope} as of ${today}.${focusNote} Include all mandatory sections, Mega Deals & Market Movers, direct filing URLs, and note any zero-activity exchanges.`;
 
-Include all mandatory sections including Mega Deals & Market Movers. For any exchange or region with zero activity, explicitly note it. Use precise figures and institutional-grade formatting throughout. Include direct filing URLs where available.`;
-
-  let lastError: Error | null = null;
-
-  for (const { model, apiVersion } of MODELS) {
+  for (const { model, apiVersion, grounded } of MODELS) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey, { apiVersion });
+      const tools = grounded ? [{ googleSearch: {} }] : [];
       const geminiModel = genAI.getGenerativeModel({
         model,
         systemInstruction: REPORT_SYSTEM_PROMPT,
-        tools: [{ googleSearch: {} }],
+        tools,
       });
-
       const result = await geminiModel.generateContent(userPrompt);
       const content = result.response.text();
-
       res.json({
         content,
         generatedAt: new Date().toISOString(),
         region: region ?? "Global",
-        modelUsed: model,
+        modelUsed: grounded ? model : `${model} (no search)`,
       });
       return;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("429") || msg.includes("quota") || msg.includes("Too Many")) {
-        req.log.warn({ model }, "Report: model quota exhausted, trying next");
-        lastError = err instanceof Error ? err : new Error(msg);
+        req.log.warn({ model, grounded }, "Report: quota exhausted, trying next");
         continue;
       }
-      req.log.error({ err, model }, "Report: non-quota error");
-      lastError = err instanceof Error ? err : new Error(msg);
+      req.log.warn({ err, model }, "Report: model error, trying next");
       continue;
     }
   }
 
-  req.log.error({ lastError }, "Report: all models exhausted");
   res.status(429).json({
-    error: "All AI models temporarily quota-limited. Gemini free tier resets every 24h. Try again later.",
+    error: "All AI models quota-limited. Gemini free tier resets at midnight Pacific. Try again in a few hours.",
   });
 });
 
