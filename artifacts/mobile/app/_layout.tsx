@@ -8,20 +8,39 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { WatchlistProvider } from "@/context/WatchlistContext";
+import { WatchlistProvider, useWatchlist } from "@/context/WatchlistContext";
+import { useLiveIPOEvents } from "@/hooks/useLiveIPOEvents";
+import { useIPOStatusWatcher } from "@/hooks/useIPOStatusWatcher";
+import { requestNotificationPermissions } from "@/lib/notifications";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function NotificationWatcher() {
+  const { events } = useLiveIPOEvents();
+  const { watchlist } = useWatchlist();
+  const [notificationsGranted, setNotificationsGranted] = useState(false);
+
+  useEffect(() => {
+    requestNotificationPermissions()
+      .then((granted) => setNotificationsGranted(granted))
+      .catch(() => {});
+  }, []);
+
+  useIPOStatusWatcher({ events, watchlist, notificationsGranted });
+
+  return null;
+}
 
 function RootLayoutNav() {
   return (
@@ -61,6 +80,7 @@ export default function RootLayout() {
           <GestureHandlerRootView>
             <KeyboardProvider>
               <WatchlistProvider>
+                <NotificationWatcher />
                 <RootLayoutNav />
               </WatchlistProvider>
             </KeyboardProvider>
