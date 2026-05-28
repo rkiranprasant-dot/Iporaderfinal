@@ -5,7 +5,8 @@
     "rootDir": "src",
     "types": ["node"],
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node"
   },
   "include": ["src"],
   "references": [
