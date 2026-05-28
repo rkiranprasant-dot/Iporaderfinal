@@ -29,6 +29,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Health check at root
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "API server is running" });
+});
+
 app.use("/api", router);
 
 export default app;
