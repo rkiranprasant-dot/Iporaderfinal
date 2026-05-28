@@ -3,7 +3,7 @@
   "framework": null,
   "buildCommand": "",
   "outputDirectory": "",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "builds": [
     {
       "src": "artifacts/api-server/src/index.ts",
