@@ -15,5 +15,5 @@ if (rawPort) {
   });
 }
 
-// Export for Vercel serverless
+// Required for Vercel serverless
 export default app;
