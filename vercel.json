@@ -1,5 +1,9 @@
 {
   "version": 2,
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "",
+  "installCommand": "pnpm install",
   "builds": [
     {
       "src": "artifacts/api-server/src/index.ts",
